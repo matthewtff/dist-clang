@@ -765,7 +765,8 @@ bool Emitter::Reload(const proto::Configuration& conf) {
   if (conf.emitter().shard_queue_limit() != Queue::NOT_STRICT_SHARDING &&
       conf.emitter().has_total_shards() &&
       old_conf->emitter().has_total_shards() &&
-      conf.emitter().total_shards() < old_conf->emitter().total_shards()) {
+      conf.emitter().total_shards() < old_conf->emitter().total_shards() &&
+      remote_workers_) {
     for (ui32 shard = conf.emitter().total_shards();
          shard != old_conf->emitter().total_shards(); ++shard) {
       bool shard_is_empty = false;

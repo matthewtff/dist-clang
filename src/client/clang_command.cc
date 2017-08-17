@@ -5,6 +5,7 @@
 #include <base/c_utils.h>
 #include <base/logging.h>
 #include <base/process_impl.h>
+#include <base/string_utils.h>
 
 #include <clang/Driver/Options.h>
 
@@ -12,6 +13,37 @@
 
 namespace dist_clang {
 namespace client {
+
+namespace {
+
+String GetRelativePath(const String& current_dir, const String& path) {
+  List<String> current_dir_parts, path_parts;
+  base::SplitString<'/'>(current_dir, current_dir_parts);
+  base::SplitString<'/'>(path, path_parts);
+
+  auto current_dir_part = current_dir_parts.begin();
+  auto path_part = path_parts.begin();
+  while (current_dir_part != current_dir_parts.end() &&
+         path_part != path_parts.end() &&
+         *current_dir_part == *path_part) {
+    ++current_dir_part;
+    ++path_part;
+  }
+
+  String result(".");
+  while (current_dir_part != current_dir_parts.end()) {
+    result += "/..";
+    ++current_dir_part;
+  }
+
+  while (path_part != path_parts.end()) {
+    result += "/" + *path_part;
+    ++path_part;
+  }
+  return result;
+}
+
+}  // anonymous
 
 ClangCommand::ClangCommand(llvm::ArrayRef<const char*> args,
                            SharedPtr<llvm::opt::OptTable> opts)
@@ -51,6 +83,8 @@ bool ClangCommand::FillFlags(base::proto::Flags* flags,
   if (!flags) {
     return true;
   }
+
+  const String current_dir = base::GetCurrentDir();
 
   flags->Clear();
 
@@ -143,8 +177,10 @@ bool ClangCommand::FillFlags(base::proto::Flags* flags,
         replaced_command.replace(
             pos, self_path.size(),
             clang_path.substr(0, clang_path.find_last_of('/')));
+        const String relative_command =
+            GetRelativePath(current_dir, replaced_command);
         non_direct_list.push_back(arg->getSpelling().data());
-        non_direct_list.push_back(tmp_list.MakeArgString(replaced_command));
+        non_direct_list.push_back(tmp_list.MakeArgString(relative_command));
         LOG(VERBOSE) << "Replaced command: " << non_direct_list.back();
       } else {
         non_cached_list.push_back(arg->getSpelling().data());
