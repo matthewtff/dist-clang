@@ -3,6 +3,7 @@
 #include <base/assert.h>
 #include <base/base.pb.h>
 #include <base/c_utils.h>
+#include <base/file_utils.h>
 #include <base/logging.h>
 #include <base/process_impl.h>
 
@@ -65,6 +66,8 @@ bool ClangCommand::FillFlags(base::proto::Flags* flags,
   }
 
   flags->Clear();
+
+  const String current_dir = base::GetCurrentDir();
 
   llvm::opt::ArgStringList non_direct_list, non_cached_list, other_list;
   llvm::opt::DerivedArgList tmp_list(arg_list_);
@@ -158,8 +161,10 @@ bool ClangCommand::FillFlags(base::proto::Flags* flags,
         replaced_command.replace(
             pos, self_path.size(),
             clang_path.substr(0, clang_path.find_last_of('/')));
+        const String relative_command =
+            base::GetRelativePath(current_dir, replaced_command);
         non_direct_list.push_back(arg->getSpelling().data());
-        non_direct_list.push_back(tmp_list.MakeArgString(replaced_command));
+        non_direct_list.push_back(tmp_list.MakeArgString(relative_command));
         LOG(VERBOSE) << "Replaced command: " << non_direct_list.back();
       } else {
         non_cached_list.push_back(arg->getSpelling().data());
