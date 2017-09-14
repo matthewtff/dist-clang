@@ -12,17 +12,19 @@ The project consists of 2 executables and a couple of configuration files.
 
 First of all do clone with an argument `--recurse-submodules` and then configure the project:
 
-    ./build/configure
-    
+    python ./build/integrate.py --configure
+
 To build You have to use a recent Clang compiler with C++14 support.
 
 ## For debugging and local usage
 
-    ninja -C out/Debug.gn All
-    cd out/Debug.gn
-    ln -s clang clang++
+    python ./build/integrate.py --build-project Debug
 
-The resulting files `clang`, `clang++` and `clangd` are located in the `out/Debug.gn` folder.
+The resulting files `clang`, `clang++` and `clangd` are located in the `out/Debug` folder.
+
+## To build portable version
+
+    python ./build/integrate.py --build-project Portable
 
 ## Linux DEB and RPM packages
 
@@ -37,7 +39,7 @@ Don't use locally the `clang` and `clangd` from the `out/Release.gn` folder sinc
 
 ## Mac OS X package
 
-    ninja -C out/Release.gn pkg_package
+    sudo ninja -C out/Release.gn pkg_package
 
 The resulting package is `out/Release.gn/dist-clang-<version>.pkg`
 

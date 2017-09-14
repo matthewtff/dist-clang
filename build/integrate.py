@@ -1,8 +1,10 @@
 import argparse
+import contextlib
 import logging
 import os
 import subprocess
 import sys
+import tarfile
 import tempfile
 import urllib2
 
@@ -12,7 +14,7 @@ ROOT_PATH = os.path.dirname(BUILD_PATH)
 BIN_PATH = os.path.join(ROOT_PATH, 'bin')
 CLANG_REVISION = '299960-1'
 CLANG_BASE_URL = ('https://infra.browser.yandex-team.ru/cache/'
-                 'commondatastorage.googleapis.com/chromium-browser-clang/')
+                 'commondatastorage.googleapis.com/chromium-browser-clang')
 OUT_DIR = os.path.join(ROOT_PATH, 'out')
 if sys.platform == 'darwin':
     CLANG_ARCH = 'Mac'
@@ -64,6 +66,7 @@ def _download_temp_file(url):
             break
         fd.write(chunk)
     fd.seek(0)
+    return fd
 
 
 def _update_clang():
@@ -83,13 +86,13 @@ def _init_and_update_submodules():
 def _generate_projects():
     for project, conf in PROJECTS.iteritems():
         args = '--args={}'.format(conf['args'])
-        out_dir = '//out/{}'.format(project + '.gn')
+        out_dir = '//out/{}'.format(project)
         subprocess.check_call([GN_PATH, '--check', args, '--ide=vs',
                                'gen', out_dir])
 
 
 def _build_target(project, target):
-    directory = os.path.join(OUT_DIR, project + '.gn')
+    directory = os.path.join(OUT_DIR, project)
     subprocess.check_call(['ninja', target], cwd=directory)
 
 
@@ -127,7 +130,7 @@ def _run_tests():
     for binary in TESTS_LIST:
         if sys.platform == 'win32':
             binary = binary + '.exe'
-        binary_path = os.path.join(OUT_DIR, 'Test.gn', binary)
+        binary_path = os.path.join(OUT_DIR, 'Test', binary)
         subprocess.check_call([binary_path], env=environment)
 
 
@@ -146,15 +149,22 @@ def main():
     if args.configure:
         _init_and_update_submodules()
         _generate_projects()
-    elif not args.run_tests:
-        _update_clang()
-        environ = os.environ.copy()
-        environ['PATH'] = CLANG_BIN_DIR + os.pathsep + environ['PATH']
-        target = PROJECTS[args.build_project]['target']
-        if args.target:
-            target = args.target
-        _build_target(args.build_project, target)
-    else:
+        return 0
+
+    build_project = 'Test'
+    if args.build_project:
+        build_project = args.build_project
+
+    target = PROJECTS[build_project]['target']
+    if args.target:
+        target = args.target
+
+    _update_clang()
+    environ = os.environ.copy()
+    environ['PATH'] = CLANG_BIN_DIR + os.pathsep + environ['PATH']
+    _build_target(build_project, target)
+
+    if args.run_tests:
         _run_tests()
 
     return 0

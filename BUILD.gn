@@ -8,7 +8,9 @@ group("All") {
 group("Tools") {
   deps = [
     "//tools/args_parser",
-    "//tools/clang",
+    "//tools/clang:clang",
+    "//tools/clang:clang++",
+    "//tools/clang:clang-cl",
   ]
 }
 

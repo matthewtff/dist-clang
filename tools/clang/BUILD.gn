@@ -10,3 +10,15 @@ executable("clang") {
     "//src/client:configuration",
   ]
 }
+
+copy("clang++") {
+  deps = [ ":clang" ]
+  sources = ["$root_out_dir/clang$exe_prefix"]
+  outputs = ["$root_out_dir/clang++$exe_prefix"]
+}
+
+copy("clang-cl") {
+  deps = [ ":clang" ]
+  sources = ["$root_out_dir/clang$exe_prefix"]
+  outputs = ["$root_out_dir/clang-cl$exe_prefix"]
+}
